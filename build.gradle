@@ -1,0 +1,165 @@
+buildscript {
+    ext.kotlin_version = '1.3.21'
+	ext.junit4Version = '4.12'
+	ext.jackson_version = '2.9.4'
+	ext.dokka_version = '0.9.16'
+
+    repositories {
+        mavenCentral()
+		jcenter()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+		classpath 'pl.allegro.tech.build:axion-release-plugin:1.8.1'
+		classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
+		classpath "org.jetbrains.dokka:dokka-gradle-plugin:${dokka_version}"
+    }
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'pl.allegro.tech.build.axion-release'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: "org.jetbrains.dokka"
+
+scmVersion {
+	tag {
+		prefix = 'spring-web-client'
+	}
+	checks {
+		uncommittedChanges = false
+	}
+	nextVersion {
+		suffix = 'rc'
+		separator = '-'
+	}
+}
+
+group 'io.github.durioneae'
+version scmVersion.version
+
+
+repositories {
+    mavenCentral()
+	jcenter()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+	compile (
+			[group: 'org.springframework', 				name: 'spring-web', 				version: '5.0.4.RELEASE'],
+			[group: 'org.springframework.retry', 		name: 'spring-retry', 				version: '1.2.2.RELEASE'],
+			[group: "com.fasterxml.jackson.datatype", 	name: "jackson-datatype-jsr310", 	version: "$jackson_version"],
+			[group: "com.fasterxml.jackson.core", 		name: "jackson-databind", 			version: "$jackson_version"],
+	)
+	runtime(
+			[
+					[group: "com.fasterxml.jackson.datatype", 	name: "jackson-datatype-jdk8", 	version: "$jackson_version"],
+					[group: "com.fasterxml.jackson.module", 	name: "jackson-module-kotlin", 	version: "2.9.4.1"]
+			]
+	)
+
+	testCompile(
+			[group: "junit", 					name: "junit", 			version: "${junit4Version}"],
+			[group: 'org.assertj', 				name: 'assertj-core', 	version: '3.6.2'],
+			[group: "com.github.tomakehurst",	name: "wiremock",		version: "2.4.1"],
+			[group: 'org.mockito', 				name: 'mockito-core', 	version: '2.7.22'],
+			[group: 'com.psmelser', 			name: 'kotlin-jackson-json', 	version: '0.1.9']
+	)
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+task dokkaJavadoc(type: org.jetbrains.dokka.gradle.DokkaTask) {
+	outputFormat = 'javadoc'
+	outputDirectory = javadoc.destinationDir
+	inputs.dir 'src/main/kotlin'
+}
+
+task javadocJar(type: Jar, dependsOn: dokkaJavadoc) {
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
+artifacts {
+	archives sourcesJar
+	archives javadocJar
+}
+
+bintray {
+	user = "${bintrayUser}"
+	key = "${bintrayKey}"
+	publications = ['mavenJava']
+	pkg {
+		repo = 'spring-web-client'
+		name = project.name
+		userOrg = 'Durioneae-Spring'
+		licenses = ['MIT']
+		vcsUrl = 'https://github.com/durioneae/spring-web-client.git'
+		publish = true
+		version {
+			name = scmVersion.version
+			released  = new Date()
+			vcsTag = "${scmVersion.tag.prefix}${scmVersion.tag.versionSeparator}${scmVersion.version}"
+			publicDownloadNumbers = true
+			gpg {
+				sign = true
+			}
+		}
+	}
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			version scmVersion.version
+			groupId group
+			artifactId project.name
+			pom.withXml {
+				asNode().children().last() + {
+					resolveStrategy = Closure.DELEGATE_FIRST
+					name 'spring-web-client'
+					description 'A wrapper library for Spring Web to kotlinize rest templates'
+					url "https://github.com/durioneae/spring-web-client"
+					scm {
+						url "https://github.com/durioneae/spring-web-client"
+					}
+					licenses {
+						license {
+							name 'MIT licence'
+							url 'https://opensource.org/licenses/MIT'
+							distribution 'repo'
+						}
+					}
+					developers {
+						developer {
+							id 'psmelser'
+							name 'Paul Smelser'
+							email 'paul.smelser@gmail.com'
+						}
+					}
+				}
+			}
+
+			artifact sourcesJar
+			artifact javadocJar
+			from components.java
+		}
+	}
+	repositories {
+		maven {
+			url "https://dl.bintray.com/psmelser/jackson/"
+		}
+	}
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
