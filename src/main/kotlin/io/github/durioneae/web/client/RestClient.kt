@@ -14,11 +14,11 @@ import java.net.URI
 class RestClient(private val restTemplate: RestOperations, private val resourceBaseUri: URI, private val faultHandler: StatusCodeExceptionMapper = DefaultStatusCodeExceptionMapper()) : RestResource {
 
     override fun request(): HttpRequestBuilder {
-        return HttpRequestBuilderImpl(this, UriComponentsBuilder.fromUri(resourceBaseUri))
+        return HttpRequestBuilder(this, UriComponentsBuilder.fromUri(resourceBaseUri))
     }
 
     override fun request(mediaType: MediaType): HttpRequestBuilder {
-        return HttpRequestBuilderImpl(this, UriComponentsBuilder.fromUri(resourceBaseUri)).header(HttpHeaders.CONTENT_TYPE, mediaType.toString())
+        return HttpRequestBuilder(this, UriComponentsBuilder.fromUri(resourceBaseUri)).header(HttpHeaders.CONTENT_TYPE, mediaType.toString())
     }
 
     internal fun delete(uri: URI, headers: HttpHeaders): ResponseEntity<*> {

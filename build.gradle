@@ -95,9 +95,9 @@ bintray {
 	key = "${bintrayKey}"
 	publications = ['mavenJava']
 	pkg {
-		repo = 'spring-web-client'
+		repo = 'Durioneae-Spring'
 		name = project.name
-		userOrg = 'Durioneae-Spring'
+		userOrg = 'durioneae'
 		licenses = ['MIT']
 		vcsUrl = 'https://github.com/durioneae/spring-web-client.git'
 		publish = true

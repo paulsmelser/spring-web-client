@@ -31,7 +31,7 @@ class RestClientTest {
         val resource = createTestResource(wireMockRule.port())
         val response = resource.request()
                 .path("/test")
-                .get(TestClass::class.java)
+                .get<TestClass>()
                 .body
 
         SoftAssertions.assertSoftly {
